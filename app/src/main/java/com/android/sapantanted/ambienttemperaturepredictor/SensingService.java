@@ -1,20 +1,19 @@
 package com.android.sapantanted.ambienttemperaturepredictor;
 
+import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.BatteryManager;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
-import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -36,24 +35,24 @@ import java.net.NetworkInterface;
 import java.util.Collections;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class SensingService extends Service {
     static final String subscriptionTopic = "nodemcu/kresit/dht/SEIL";
     static final String publishTopic = "data/seil/sm_ph_temp/1122";
     static final String serverUri = "tcp://mqtt.seil.cse.iitb.ac.in:1883";
     static final int mqttQOS = 1;
 
-    private TextView tvAmbientTemperature, tvActualTemperature;
-    private EditText etTemperatureSensorID;
     private MqttAndroidClient mqttAndroidClient;
     private String macAdd;
     private String clientId = "AmbientTemperaturePredictor";
     private double batteryTemperature = -1;
-    private Handler mHandler;
+
+    public SensingService() {
+    }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+    public void onCreate() {
+        super.onCreate();
+
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             macAdd = getMacAddr();
         } else {
@@ -61,12 +60,6 @@ public class MainActivity extends AppCompatActivity {
             WifiInfo info = manager.getConnectionInfo();
             macAdd = info.getMacAddress();
         }
-        Intent intent = new Intent(getApplicationContext(),SensingService.class);
-        startService(intent);
-        tvAmbientTemperature = findViewById(R.id.tvAmbientTemperature);
-        tvActualTemperature = findViewById(R.id.tvActualTemperature);
-        etTemperatureSensorID = findViewById(R.id.etTemperatureSensorID);
-        etTemperatureSensorID.setText(getSharedPreferences("sp",MODE_PRIVATE).getString("temperature_sensor_id",""));
 
         //registering broadcastReceiver for battery temperature changes
         IntentFilter intentfilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
@@ -134,13 +127,6 @@ public class MainActivity extends AppCompatActivity {
             ex.printStackTrace();
         }
 
-        mHandler = new Handler(Looper.getMainLooper()) {
-            @Override
-            public void handleMessage(Message message) {
-                tvActualTemperature.setText("Actual Temperature Sensor: " + message.getData().getDouble("reading") + " " + (char) 0x00B0 + "C");
-            }
-        };
-
     }
 
     public static String getMacAddr() {
@@ -186,15 +172,18 @@ public class MainActivity extends AppCompatActivity {
             mqttAndroidClient.subscribe(subscriptionTopic, mqttQOS, new IMqttMessageListener() {
                 @Override
                 public void messageArrived(String topic, MqttMessage message) throws Exception {
+                    String temperatureSensorId = SensingService.this.getSharedPreferences("sp", MODE_PRIVATE).getString("temperature_sensor_id", "");
                     String sensorReading = new String(message.getPayload());
                     String id = sensorReading.split(",")[0];
-                    if (!id.equalsIgnoreCase(etTemperatureSensorID.getText().toString())) return;
+                    if (!id.equalsIgnoreCase(temperatureSensorId)) return;
                     final double actualTemperatureReading = Double.parseDouble(sensorReading.split(",")[1]);
                     Message msg = new Message();
                     Bundle bundle = new Bundle();
                     bundle.putDouble("reading", actualTemperatureReading);
                     msg.setData(bundle);
-                    mHandler.sendMessage(msg);
+                    TemperatureReading tr = new TemperatureReading(macAdd, -1, batteryTemperature, 0.0, 0.0, Integer.parseInt(id), actualTemperatureReading);
+                    if (mqttAndroidClient.isConnected())
+                        publishMessage(tr.toMQTTMessage());
                 }
             });
 
@@ -204,22 +193,39 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void publishMessage(String publishMessage) {
+
+        try {
+            MqttMessage message = new MqttMessage();
+            message.setPayload(publishMessage.getBytes());
+            mqttAndroidClient.publish(publishTopic, message);
+//            makeToast("Message Published");
+            if (!mqttAndroidClient.isConnected()) {
+//                makeToast(mqttAndroidClient.getBufferedMessageCount() + " messages in buffer.");
+            }
+        } catch (MqttException e) {
+            System.err.println("Error Publishing: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     private void makeToast(String s) {
-        Toast.makeText(MainActivity.this, "MainActivity: " + s, Toast.LENGTH_SHORT).show();
+        Toast.makeText(SensingService.this, "SensingService: "+s, Toast.LENGTH_SHORT).show();
     }
 
     private BroadcastReceiver batteryTemperatureBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             double batteryTemperature = (double) intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10;
-            MainActivity.this.batteryTemperature = batteryTemperature;
-            tvAmbientTemperature.setText("Battery Temperature: " + MainActivity.this.batteryTemperature + " " + (char) 0x00B0 + "C");
+            SensingService.this.batteryTemperature = batteryTemperature;
+//            makeToast("Battery Temperature: " + SensingService.this.batteryTemperature + " " + (char) 0x00B0 + "C");
+
         }
     };
 
-    public void setTemperatureSensorId(View view) {
-        SharedPreferences sp = this.getSharedPreferences("sp", MODE_PRIVATE);
-        sp.edit().putString("temperature_sensor_id", etTemperatureSensorID.getText().toString()).commit();
+    @Override
+    public IBinder onBind(Intent intent) {
+        // TODO: Return the communication channel to the service.
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 }
-
