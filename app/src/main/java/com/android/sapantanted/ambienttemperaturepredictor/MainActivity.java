@@ -52,7 +52,6 @@ public class MainActivity extends AppCompatActivity {
     private String clientId = "AmbientTemperaturePredictor";
     private double batteryTemperature = -1;
     private Handler mHandler;
-    private Button btnStartStopService;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -69,16 +68,7 @@ public class MainActivity extends AppCompatActivity {
         tvActualTemperature = findViewById(R.id.tvActualTemperature);
         etTemperatureSensorID = findViewById(R.id.etTemperatureSensorID);
         etTemperatureSensorID.setText(getSharedPreferences("sp", MODE_PRIVATE).getString("temperature_sensor_id", ""));
-        btnStartStopService = findViewById(R.id.btnStartStopService);
-
-        if (isMyServiceRunning(SensingService.class)) {
-            btnStartStopService.setBackgroundColor(Color.parseColor("#ff5252"));//Red
-            btnStartStopService.setText("Stop Data Collection");
-        } else {
-            btnStartStopService.setBackgroundColor(Color.parseColor("#66bb6a"));//Green
-            btnStartStopService.setText("Start Data Collection");
-        }
-        //registering broadcastReceiver for battery temperature changes
+//registering broadcastReceiver for battery temperature changes
         IntentFilter intentfilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         this.registerReceiver(batteryTemperatureBroadcastReceiver, intentfilter);
 
@@ -90,9 +80,10 @@ public class MainActivity extends AppCompatActivity {
             public void connectComplete(boolean reconnect, String serverURI) {
                 if (reconnect) {
                     makeToast("Reconnected to : " + serverURI);
-                    subscribeToTopic();
+//                    subscribeToTopic();
                 } else {
-                    makeToast("Connected to: " + serverURI);
+//                    makeToast("Connected to: " + serverURI);
+                    makeToast("MQTT Connected!");
                 }
             }
 
@@ -117,12 +108,12 @@ public class MainActivity extends AppCompatActivity {
         mqttConnectOptions.setAutomaticReconnect(true);
         mqttConnectOptions.setCleanSession(false);
         try {
-            makeToast("Connecting to " + serverUri);
+//            makeToast("Connecting to " + serverUri);
             mqttAndroidClient.connect(mqttConnectOptions,
                     null, new IMqttActionListener() {
                         @Override
                         public void onSuccess(IMqttToken asyncActionToken) {
-                            makeToast("Connected to: " + serverUri);
+//                            makeToast("Connected to: " + serverUri);
                             DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
                             disconnectedBufferOptions.setBufferEnabled(true);
                             disconnectedBufferOptions.setBufferSize(100);
@@ -227,24 +218,21 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        MainActivity.this.unregisterReceiver(batteryTemperatureBroadcastReceiver);
+    }
+
     public void setTemperatureSensorId(View view) {
         SharedPreferences sp = this.getSharedPreferences("sp", MODE_PRIVATE);
         sp.edit().putString("temperature_sensor_id", etTemperatureSensorID.getText().toString()).commit();
         Toast.makeText(this, "Sensor id updated successfull!", Toast.LENGTH_SHORT).show();
     }
 
-    public void startStopService(View view) {
+    public void startService(View view) {
         Intent intent = new Intent(getApplicationContext(), SensingService.class);
-        if (isMyServiceRunning(SensingService.class)) {
-            stopService(intent);
-            btnStartStopService.setBackgroundColor(Color.parseColor("#66bb6a"));//Green
-            btnStartStopService.setText("Start Data Collection");
-        } else {
-            startService(intent);
-            btnStartStopService.setBackgroundColor(Color.parseColor("#ff5252"));//Red
-            btnStartStopService.setText("Stop Data Collection");
-        }
-
+        startService(intent);
     }
 
     private boolean isMyServiceRunning(Class<?> serviceClass) {
@@ -255,6 +243,11 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         return false;
+    }
+
+    public void stopService(View view) {
+        Intent intent = new Intent(getApplicationContext(), SensingService.class);
+        stopService(intent);
     }
 }
 
