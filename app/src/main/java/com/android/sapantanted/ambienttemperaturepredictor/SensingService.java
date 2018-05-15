@@ -14,6 +14,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.os.PowerManager;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -35,6 +36,8 @@ import java.net.NetworkInterface;
 import java.util.Collections;
 import java.util.List;
 
+import static android.content.ContentValues.TAG;
+
 public class SensingService extends Service {
     static final String subscriptionTopic = "nodemcu/kresit/dht/SEIL";
     static final String publishTopic = "data/seil/sm_ph_temp/1122";
@@ -45,14 +48,25 @@ public class SensingService extends Service {
     private String macAdd;
     private String clientId = "AmbientTemperaturePredictor";
     private double batteryTemperature = -1;
+    private PowerManager.WakeLock wl;
 
     public SensingService() {
     }
 
     @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        makeToast("onStartCommand()");
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+    @Override
     public void onCreate() {
         super.onCreate();
-
+        makeToast("onCreate()");
+        PowerManager pm = (PowerManager) getApplicationContext().getSystemService(
+                getApplicationContext().POWER_SERVICE);
+        wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+        wl.acquire();
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             macAdd = getMacAddr();
         } else {
@@ -66,16 +80,17 @@ public class SensingService extends Service {
         this.registerReceiver(batteryTemperatureBroadcastReceiver, intentfilter);
 
         clientId = clientId + System.currentTimeMillis();
-        mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), serverUri, clientId);
+        mqttAndroidClient = new MqttAndroidClient(this, serverUri, clientId);
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
 
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
                 if (reconnect) {
                     makeToast("Reconnected to : " + serverURI);
-                    subscribeToTopic();
+//                    subscribeToTopic();
                 } else {
-                    makeToast("Connected to: " + serverURI);
+//                    makeToast("Connected to: " + serverURI);
+                    makeToast("MQTT Connected!");
                 }
             }
 
@@ -100,12 +115,12 @@ public class SensingService extends Service {
         mqttConnectOptions.setAutomaticReconnect(true);
         mqttConnectOptions.setCleanSession(false);
         try {
-            makeToast("Connecting to " + serverUri);
+//            makeToast("Connecting to " + serverUri);
             mqttAndroidClient.connect(mqttConnectOptions,
                     null, new IMqttActionListener() {
                         @Override
                         public void onSuccess(IMqttToken asyncActionToken) {
-                            makeToast("Connected to: " + serverUri);
+//                            makeToast("Connected to: " + serverUri);
                             DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
                             disconnectedBufferOptions.setBufferEnabled(true);
                             disconnectedBufferOptions.setBufferSize(100);
@@ -161,7 +176,7 @@ public class SensingService extends Service {
             mqttAndroidClient.subscribe(subscriptionTopic, mqttQOS, null, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
-                    makeToast("Subscribed!");
+//                    makeToast("Subscribed!");
                 }
 
                 @Override
@@ -199,8 +214,8 @@ public class SensingService extends Service {
             MqttMessage message = new MqttMessage();
             message.setPayload(publishMessage.getBytes());
             mqttAndroidClient.publish(publishTopic, message);
-//            makeToast("Message Published");
             if (!mqttAndroidClient.isConnected()) {
+                System.out.println("MQTT not connected!!");
 //                makeToast(mqttAndroidClient.getBufferedMessageCount() + " messages in buffer.");
             }
         } catch (MqttException e) {
@@ -210,7 +225,7 @@ public class SensingService extends Service {
     }
 
     private void makeToast(String s) {
-        Toast.makeText(SensingService.this, "SensingService: "+s, Toast.LENGTH_SHORT).show();
+        Toast.makeText(SensingService.this, "SensingService: " + s, Toast.LENGTH_SHORT).show();
     }
 
     private BroadcastReceiver batteryTemperatureBroadcastReceiver = new BroadcastReceiver() {
@@ -218,10 +233,22 @@ public class SensingService extends Service {
         public void onReceive(Context context, Intent intent) {
             double batteryTemperature = (double) intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10;
             SensingService.this.batteryTemperature = batteryTemperature;
-//            makeToast("Battery Temperature: " + SensingService.this.batteryTemperature + " " + (char) 0x00B0 + "C");
 
         }
     };
+
+    @Override
+    public void onDestroy() {
+        makeToast("Destroy() called!");
+        try {
+            mqttAndroidClient.unsubscribe(subscriptionTopic);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+        this.unregisterReceiver(batteryTemperatureBroadcastReceiver);
+        wl.release();
+        super.onDestroy();
+    }
 
     @Override
     public IBinder onBind(Intent intent) {

@@ -42,13 +42,28 @@
             android:onClick="setTemperatureSensorId"
             android:text="Set Temperature Sensor Id" />
     </LinearLayout>
-
+<LinearLayout
+    android:layout_width="match_parent"
+    android:orientation="horizontal"
+    android:layout_height="wrap_content">
     <Button
-        android:id="@+id/btnStartStopService"
-        android:layout_width="match_parent"
+        android:id="@+id/btnStartService"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="#66bb6a"
-        android:onClick="startStopService"
-        android:text="Start/Stop Service" />
+        android:layout_weight="1"
+        android:onClick="startService"
+        android:layout_margin="10dp"
+        android:text="Start Service" />
 
+    <Button
+        android:id="@+id/btnStopService"
+        android:layout_width="wrap_content"
+        android:layout_margin="10dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:background="#ef5350"
+        android:onClick="stopService"
+        android:text="Stop Service" />
+</LinearLayout>
 </LinearLayout>
