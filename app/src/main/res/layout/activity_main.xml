@@ -21,18 +21,34 @@
         android:layout_margin="10dp"
         android:text="Actual Temperature Sensor Reading" />
 
-    <EditText
-        android:id="@+id/etTemperatureSensorID"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="10dp"
-        android:hint="Temperature Sensor Id" />
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/etTemperatureSensorID"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_weight="1"
+            android:hint="Temperature Sensor Id" />
+
+        <Button
+            android:id="@+id/btnSetSensorId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="setTemperatureSensorId"
+            android:text="Set Temperature Sensor Id" />
+    </LinearLayout>
 
     <Button
-        android:id="@+id/btnSetSensorId"
+        android:id="@+id/btnStartStopService"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Set Temperature Sensor Id"
-        android:onClick="setTemperatureSensorId"/>
+        android:background="#66bb6a"
+        android:onClick="startStopService"
+        android:text="Start/Stop Service" />
 
 </LinearLayout>

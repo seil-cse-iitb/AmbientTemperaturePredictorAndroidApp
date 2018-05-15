@@ -1,10 +1,12 @@
 package com.android.sapantanted.ambienttemperaturepredictor;
 
+import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.BatteryManager;
@@ -15,6 +17,7 @@ import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -49,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
     private String clientId = "AmbientTemperaturePredictor";
     private double batteryTemperature = -1;
     private Handler mHandler;
+    private Button btnStartStopService;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -61,13 +65,19 @@ public class MainActivity extends AppCompatActivity {
             WifiInfo info = manager.getConnectionInfo();
             macAdd = info.getMacAddress();
         }
-        Intent intent = new Intent(getApplicationContext(),SensingService.class);
-        startService(intent);
         tvAmbientTemperature = findViewById(R.id.tvAmbientTemperature);
         tvActualTemperature = findViewById(R.id.tvActualTemperature);
         etTemperatureSensorID = findViewById(R.id.etTemperatureSensorID);
-        etTemperatureSensorID.setText(getSharedPreferences("sp",MODE_PRIVATE).getString("temperature_sensor_id",""));
+        etTemperatureSensorID.setText(getSharedPreferences("sp", MODE_PRIVATE).getString("temperature_sensor_id", ""));
+        btnStartStopService = findViewById(R.id.btnStartStopService);
 
+        if (isMyServiceRunning(SensingService.class)) {
+            btnStartStopService.setBackgroundColor(Color.parseColor("#ff5252"));//Red
+            btnStartStopService.setText("Stop Data Collection");
+        } else {
+            btnStartStopService.setBackgroundColor(Color.parseColor("#66bb6a"));//Green
+            btnStartStopService.setText("Start Data Collection");
+        }
         //registering broadcastReceiver for battery temperature changes
         IntentFilter intentfilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         this.registerReceiver(batteryTemperatureBroadcastReceiver, intentfilter);
@@ -220,6 +230,31 @@ public class MainActivity extends AppCompatActivity {
     public void setTemperatureSensorId(View view) {
         SharedPreferences sp = this.getSharedPreferences("sp", MODE_PRIVATE);
         sp.edit().putString("temperature_sensor_id", etTemperatureSensorID.getText().toString()).commit();
+        Toast.makeText(this, "Sensor id updated successfull!", Toast.LENGTH_SHORT).show();
+    }
+
+    public void startStopService(View view) {
+        Intent intent = new Intent(getApplicationContext(), SensingService.class);
+        if (isMyServiceRunning(SensingService.class)) {
+            stopService(intent);
+            btnStartStopService.setBackgroundColor(Color.parseColor("#66bb6a"));//Green
+            btnStartStopService.setText("Start Data Collection");
+        } else {
+            startService(intent);
+            btnStartStopService.setBackgroundColor(Color.parseColor("#ff5252"));//Red
+            btnStartStopService.setText("Stop Data Collection");
+        }
+
+    }
+
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 
