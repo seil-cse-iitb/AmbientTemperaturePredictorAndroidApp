@@ -245,6 +245,7 @@ public class SensingService extends Service {
         } catch (MqttException e) {
             e.printStackTrace();
         }
+        mqttAndroidClient.unregisterResources();
         this.unregisterReceiver(batteryTemperatureBroadcastReceiver);
         wl.release();
         super.onDestroy();

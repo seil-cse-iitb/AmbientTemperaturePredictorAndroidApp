@@ -226,6 +226,7 @@ public class MainActivity extends AppCompatActivity {
         } catch (MqttException e) {
             e.printStackTrace();
         }
+        mqttAndroidClient.unregisterResources();
         this.unregisterReceiver(batteryTemperatureBroadcastReceiver);
     }
 
