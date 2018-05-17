@@ -14,7 +14,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS temperature_reading(sm_ph_mac_id varchar(50) not null,sm_ph_ts double not null" +
-                " ,battery_temperature double not null,cpu_temperature double ,ram_usage_percent double, adt_sensor_id int not null, " +
+                " ,battery_temperature double not null,BMS_temperature double ,ram_usage_percent double, adt_sensor_id int not null, " +
                 "actual_temperature double not null,primary key(sm_ph_mac_id,ts)) ;");
     }
 
@@ -28,7 +28,7 @@ public class DBHelper extends SQLiteOpenHelper {
         contentValues.put("sm_ph_mac_id", tr.getMacID());
         contentValues.put("sm_ph_ts", tr.getSmphTs());
         contentValues.put("battery_temperature", tr.getBatteryTemperature());
-        contentValues.put("cpu_temperature", tr.getCpuTemperature());
+        contentValues.put("BMS_temperature", tr.getCpuTemperature());
         contentValues.put("ram_usage_percent", tr.getRamUsagePercent());
         contentValues.put("adt_sensor_id", tr.getAdtSensorId());
         contentValues.put("actual_temperature", tr.getActualTemperature());

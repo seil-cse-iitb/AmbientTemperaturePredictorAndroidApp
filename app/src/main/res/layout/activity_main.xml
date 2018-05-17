@@ -19,7 +19,20 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
-        android:text="Actual Temperature Sensor Reading" />
+        android:text="Actual Temperature Sensor: " />
+
+    <TextView
+        android:id="@+id/tvMacId"
+        android:layout_margin="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="MAC ID: " />
+    <TextView
+        android:id="@+id/tvRamUsage"
+        android:layout_margin="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ram Usage: " />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -42,28 +55,37 @@
             android:onClick="setTemperatureSensorId"
             android:text="Set Temperature Sensor Id" />
     </LinearLayout>
-<LinearLayout
-    android:layout_width="match_parent"
-    android:orientation="horizontal"
-    android:layout_height="wrap_content">
-    <Button
-        android:id="@+id/btnStartService"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="#66bb6a"
-        android:layout_weight="1"
-        android:onClick="startService"
-        android:layout_margin="10dp"
-        android:text="Start Service" />
 
-    <Button
-        android:id="@+id/btnStopService"
-        android:layout_width="wrap_content"
-        android:layout_margin="10dp"
-        android:layout_weight="1"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#ef5350"
-        android:onClick="stopService"
-        android:text="Stop Service" />
-</LinearLayout>
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnStartService"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_weight="1"
+            android:background="#66bb6a"
+            android:onClick="startService"
+            android:text="Start Service" />
+
+        <Button
+            android:id="@+id/btnStopService"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_weight="1"
+            android:background="#ef5350"
+            android:onClick="stopService"
+            android:text="Stop Service" />
+    </LinearLayout>
+    <TextView
+        android:id="@+id/tvMQTTMessage"
+        android:layout_margin="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="MQTT Message" />
+
 </LinearLayout>

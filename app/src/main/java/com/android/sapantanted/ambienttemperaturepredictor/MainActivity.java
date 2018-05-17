@@ -1,27 +1,22 @@
 package com.android.sapantanted.ambienttemperaturepredictor;
 
-import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
-import android.graphics.Color;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.BatteryManager;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.sapantanted.ambienttemperaturepredictor.helper.Constants;
+import com.android.sapantanted.ambienttemperaturepredictor.helper.Functions;
 import com.android.sapantanted.ambienttemperaturepredictor.model.TemperatureReading;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
@@ -35,45 +30,41 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-import java.net.NetworkInterface;
-import java.util.Collections;
-import java.util.List;
+import java.text.DecimalFormat;
+
+import static com.android.sapantanted.ambienttemperaturepredictor.helper.Functions.*;
+import static com.android.sapantanted.ambienttemperaturepredictor.helper.Constants.*;
 
 public class MainActivity extends AppCompatActivity {
-    static final String subscriptionTopic = "nodemcu/kresit/dht/SEIL";
-    static final String publishTopic = "data/seil/sm_ph_temp/1122";
-    static final String serverUri = "tcp://mqtt.seil.cse.iitb.ac.in:1883";
-    static final int mqttQOS = 1;
 
-    private TextView tvAmbientTemperature, tvActualTemperature;
+    private TextView tvAmbientTemperature, tvActualTemperature, tvMacId, tvRamUsage, tvMQTTMessage;
     private EditText etTemperatureSensorID;
     private MqttAndroidClient mqttAndroidClient;
-    private String macAdd;
     private String clientId = "AmbientTemperaturePredictor";
-    private double batteryTemperature = -1;
     private Handler mHandler;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            macAdd = getMacAddr();
-        } else {
-            WifiManager manager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-            WifiInfo info = manager.getConnectionInfo();
-            macAdd = info.getMacAddress();
-        }
+
         tvAmbientTemperature = findViewById(R.id.tvAmbientTemperature);
         tvActualTemperature = findViewById(R.id.tvActualTemperature);
+        tvMacId = findViewById(R.id.tvMacId);
+        tvRamUsage = findViewById(R.id.tvRamUsage);
+        tvMQTTMessage = findViewById(R.id.tvMQTTMessage);
         etTemperatureSensorID = findViewById(R.id.etTemperatureSensorID);
-        etTemperatureSensorID.setText(getSharedPreferences("sp", MODE_PRIVATE).getString("temperature_sensor_id", ""));
-//registering broadcastReceiver for battery temperature changes
+        etTemperatureSensorID.setText(getStringFromSP(this, "temperature_sensor_id"));
+
+        tvMacId.setText("MAC ID: " + getMacAddr(getApplicationContext()));
+        tvRamUsage.setText("Ram Usage: " + roundToDecimalPlaces(getRamUsagePercentage(MainActivity.this), 2) + " %");
+
+        //registering broadcastReceiver for battery temperature changes
         IntentFilter intentfilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         this.registerReceiver(batteryTemperatureBroadcastReceiver, intentfilter);
 
         clientId = clientId + System.currentTimeMillis();
-        mqttAndroidClient = new MqttAndroidClient(this, serverUri, clientId);
+        mqttAndroidClient = new MqttAndroidClient(this, SERVER_URI, clientId);
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
 
             @Override
@@ -108,12 +99,12 @@ public class MainActivity extends AppCompatActivity {
         mqttConnectOptions.setAutomaticReconnect(true);
         mqttConnectOptions.setCleanSession(false);
         try {
-//            makeToast("Connecting to " + serverUri);
+//            makeToast("Connecting to " + SERVER_URI);
             mqttAndroidClient.connect(mqttConnectOptions,
                     null, new IMqttActionListener() {
                         @Override
                         public void onSuccess(IMqttToken asyncActionToken) {
-//                            makeToast("Connected to: " + serverUri);
+//                            makeToast("Connected to: " + SERVER_URI);
                             DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
                             disconnectedBufferOptions.setBufferEnabled(true);
                             disconnectedBufferOptions.setBufferSize(100);
@@ -125,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
 
                         @Override
                         public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                            makeToast("Failed to connect to: " + serverUri);
+                            makeToast("Failed to connect to: " + SERVER_URI);
                             exception.printStackTrace();
                         }
                     });
@@ -138,42 +129,36 @@ public class MainActivity extends AppCompatActivity {
         mHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message message) {
-                tvActualTemperature.setText("Actual Temperature Sensor: " + message.getData().getDouble("reading") + " " + (char) 0x00B0 + "C");
+                double actualTemperatureReading = message.getData().getDouble("reading");
+                tvActualTemperature.setText("Actual Temperature Sensor: " + actualTemperatureReading + " " + (char) 0x00B0 + "C");
+                TemperatureReading tr = new TemperatureReading("mac_id", -1,
+                        getBatteryTemperature(MainActivity.this), 0.0,
+                        getRamUsagePercentage(MainActivity.this), "sensor_id", actualTemperatureReading,
+                        getTemperature(Constants.BMS),
+                        getTemperature(Constants.CHG_THERM),
+                        getTemperature(Constants.XO_THERM),
+                        getTemperature(Constants.XO_THERM_BUF),
+                        getTemperature(Constants.MSM_THERM),
+                        getTemperature(Constants.CHG_TEMP),
+                        getTemperature(Constants.PM_8953_TZ),
+                        getTemperature(Constants.PA_THERM0),
+                        getTemperature(Constants.FRONT_TEMP),
+                        getTemperature(Constants.BACK_TEMP),
+                        getTemperature(Constants.BATTERY),
+                        getBatteryPercentage(MainActivity.this),
+                        getBatteryVoltage(MainActivity.this),
+                        isCharging(MainActivity.this),
+                        isTurboCharging(MainActivity.this)
+                );
+                tvMQTTMessage.setText(tr.toMQTTMessage());
             }
         };
 
     }
 
-    public static String getMacAddr() {
-        try {
-            List<NetworkInterface> all = Collections.list(NetworkInterface.getNetworkInterfaces());
-            for (NetworkInterface nif : all) {
-                if (!nif.getName().equalsIgnoreCase("wlan0")) continue;
-
-                byte[] macBytes = nif.getHardwareAddress();
-                if (macBytes == null) {
-                    return "";
-                }
-
-                StringBuilder res1 = new StringBuilder();
-                for (byte b : macBytes) {
-                    res1.append(Integer.toHexString(b & 0xFF) + ":");
-                }
-
-                if (res1.length() > 0) {
-                    res1.deleteCharAt(res1.length() - 1);
-                }
-                return res1.toString();
-            }
-        } catch (Exception ex) {
-            //handle exception
-        }
-        return "";
-    }
-
     public void subscribeToTopic() {
         try {
-            mqttAndroidClient.subscribe(subscriptionTopic, mqttQOS, null, new IMqttActionListener() {
+            mqttAndroidClient.subscribe(SUBSCRIPTION_TOPIC, MQTT_QOS, null, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
                     makeToast("Subscribed!");
@@ -184,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
                     makeToast("Failed to subscribe");
                 }
             });
-            mqttAndroidClient.subscribe(subscriptionTopic, mqttQOS, new IMqttMessageListener() {
+            mqttAndroidClient.subscribe(SUBSCRIPTION_TOPIC, MQTT_QOS, new IMqttMessageListener() {
                 @Override
                 public void messageArrived(String topic, MqttMessage message) throws Exception {
                     String sensorReading = new String(message.getPayload());
@@ -213,8 +198,9 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             double batteryTemperature = (double) intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10;
-            MainActivity.this.batteryTemperature = batteryTemperature;
-            tvAmbientTemperature.setText("Battery Temperature: " + MainActivity.this.batteryTemperature + " " + (char) 0x00B0 + "C");
+            tvAmbientTemperature.setText("Battery Temperature: " + batteryTemperature + " " + (char) 0x00B0 + "C");
+            tvRamUsage.setText("Ram Usage: " + roundToDecimalPlaces(getRamUsagePercentage(MainActivity.this), 2) + " %");
+
         }
     };
 
@@ -222,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         try {
-            mqttAndroidClient.unsubscribe(subscriptionTopic);
+            mqttAndroidClient.unsubscribe(SUBSCRIPTION_TOPIC);
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -231,24 +217,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void setTemperatureSensorId(View view) {
-        SharedPreferences sp = this.getSharedPreferences("sp", MODE_PRIVATE);
-        sp.edit().putString("temperature_sensor_id", etTemperatureSensorID.getText().toString()).commit();
+        putStringToSP(this, "temperature_sensor_id", etTemperatureSensorID.getText().toString());
         Toast.makeText(this, "Sensor id updated successfull!", Toast.LENGTH_SHORT).show();
     }
 
     public void startService(View view) {
         Intent intent = new Intent(MainActivity.this, SensingService.class);
         startService(intent);
-    }
-
-    private boolean isMyServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public void stopService(View view) {
