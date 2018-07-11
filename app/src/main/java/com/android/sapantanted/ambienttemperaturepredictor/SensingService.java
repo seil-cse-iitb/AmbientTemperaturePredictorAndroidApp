@@ -10,7 +10,6 @@ import com.android.sapantanted.ambienttemperaturepredictor.helper.Constants;
 import com.android.sapantanted.ambienttemperaturepredictor.model.TemperatureReading;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
-import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
@@ -57,8 +56,10 @@ public class SensingService extends Service {
             public void connectComplete(boolean reconnect, String serverURI) {
                 if (reconnect) {
                     makeToast("Reconnected to : " + serverURI);
+                    logInfo(SensingService.this,"[MQTT Reconnected]");
                 } else {
                     makeToast("MQTT Connected!");
+                    logInfo(SensingService.this,"[MQTT Connected]");
                 }
             }
 
@@ -66,32 +67,34 @@ public class SensingService extends Service {
             public void connectionLost(Throwable cause) {
                 makeToast("The Connection was lost." + cause.getMessage());
                 cause.printStackTrace();
+                logError(SensingService.this, "[MQTT Connection Lost]" + cause.getMessage());
             }
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 makeToast("Incoming message: " + new String(message.getPayload()));
+                logInfo(SensingService.this,"[Message Arrived]"+new String(message.getPayload()));
             }
 
             @Override
             public void deliveryComplete(IMqttDeliveryToken token) {
-                makeToast("Message delivered! ");
+//                makeToast("Message delivered! ");
             }
         });
         MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
         mqttConnectOptions.setAutomaticReconnect(true);
-        mqttConnectOptions.setCleanSession(false);
+        mqttConnectOptions.setCleanSession(true);
         try {
             mqttAndroidClient.connect(mqttConnectOptions,
                     null, new IMqttActionListener() {
                         @Override
                         public void onSuccess(IMqttToken asyncActionToken) {
-                            DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
-                            disconnectedBufferOptions.setBufferEnabled(true);
-                            disconnectedBufferOptions.setBufferSize(100);
-                            disconnectedBufferOptions.setPersistBuffer(false);
-                            disconnectedBufferOptions.setDeleteOldestMessages(false);
-                            mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
+//                            DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
+//                            disconnectedBufferOptions.setBufferEnabled(true);
+//                            disconnectedBufferOptions.setBufferSize(100);
+//                            disconnectedBufferOptions.setPersistBuffer(false);
+//                            disconnectedBufferOptions.setDeleteOldestMessages(false);
+//                            mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
                             subscribeToTopic();
                         }
 

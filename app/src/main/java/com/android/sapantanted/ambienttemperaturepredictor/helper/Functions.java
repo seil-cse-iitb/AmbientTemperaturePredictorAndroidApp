@@ -9,13 +9,21 @@ import android.net.wifi.WifiManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
+import android.widget.Toast;
+
+import com.android.sapantanted.ambienttemperaturepredictor.SensingService;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.RoundingMode;
 import java.net.NetworkInterface;
 import java.text.DecimalFormat;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import static android.content.Context.ACTIVITY_SERVICE;
@@ -53,11 +61,13 @@ public class Functions {
     public static boolean isTurboCharging(Context context) {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
             double averageCurrent = getBatteryAverageCurrent(context);
+            makeToast(context,"AverageCurrent: "+averageCurrent);
             if (averageCurrent > 1500000) return true;
             else return false;
         } else {
             return false;
         }
+        //TODO Current might not be correct parameter to check for turbo charging. Charging Voltage can be a significant parameter
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -163,7 +173,7 @@ public class Functions {
             freeSize = freeRamMemorySize(context);
             totalSize = totalRamMemorySize(context);
             usedSize = totalSize - freeSize;
-            percent = (usedSize* 100 / (double) totalSize) ;
+            percent = (usedSize * 100 / (double) totalSize);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -187,13 +197,44 @@ public class Functions {
         return availableMegs;
     }
 
-    public static String roundToDecimalPlaces(double value,int decimalPlaces){
-        String formatString ="#";
-        if(decimalPlaces>0)formatString+=".";
+    public static String roundToDecimalPlaces(double value, int decimalPlaces) {
+        String formatString = "#";
+        if (decimalPlaces > 0) formatString += ".";
         for (int i = 0; i < decimalPlaces; i++) {
-            formatString+="#";
+            formatString += "#";
         }
         DecimalFormat decimalFormat = new DecimalFormat(formatString);
         return decimalFormat.format(value);
     }
+
+    public static void log(Context context, String text) {
+        File folder = context.getExternalFilesDir("AmbientTemperaturePredictionApp");
+        System.out.println(text);
+        File log = new File(folder, "log");
+        FileOutputStream stream = null;
+        try {
+            stream = new FileOutputStream(log);
+
+            try {
+                stream.write(text.getBytes());
+            } finally {
+                stream.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void logError(Context context, String error) {
+        log(context, "[" + new Date() + "][Exception]" + error);
+    }
+
+    public static void logInfo(Context context, String info) {
+        log(context, "[" + new Date() + "][Info]" + info);
+    }
+
+    private static void makeToast(Context context, String str) {
+        Toast.makeText(context, str, Toast.LENGTH_SHORT).show();
+    }
+
 }
