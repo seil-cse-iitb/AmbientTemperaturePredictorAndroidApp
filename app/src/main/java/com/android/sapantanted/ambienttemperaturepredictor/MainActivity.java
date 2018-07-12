@@ -11,6 +11,8 @@ import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
     private MqttAndroidClient mqttAndroidClient;
     private String clientId = "AmbientTemperaturePredictor";
     private Handler mHandler;
+    private CheckBox cbDeliveryStatus;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -53,12 +56,29 @@ public class MainActivity extends AppCompatActivity {
         tvMacId = findViewById(R.id.tvMacId);
         tvRamUsage = findViewById(R.id.tvRamUsage);
         tvMQTTMessage = findViewById(R.id.tvMQTTMessage);
+        cbDeliveryStatus = findViewById(R.id.cbDeliveryStatus);
         etTemperatureSensorID = findViewById(R.id.etTemperatureSensorID);
         etTemperatureSensorID.setText(getStringFromSP(this, "temperature_sensor_id"));
 
         tvMacId.setText("MAC ID: " + getMacAddr(getApplicationContext()));
         tvRamUsage.setText("Ram Usage: " + roundToDecimalPlaces(getRamUsagePercentage(MainActivity.this), 2) + " %");
-
+        if (getStringFromSP(this, "delivery_status") == null) {
+            cbDeliveryStatus.setChecked(false);
+        } else {
+            if (getStringFromSP(this, "delivery_status").equalsIgnoreCase("true"))
+                cbDeliveryStatus.setChecked(true);
+            else
+                cbDeliveryStatus.setChecked(false);
+        }
+        cbDeliveryStatus.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                if (b)
+                    putStringToSP(MainActivity.this, "delivery_status", "true");
+                else
+                    putStringToSP(MainActivity.this, "delivery_status", "false");
+            }
+        });
         //registering broadcastReceiver for battery temperature changes
         IntentFilter intentfilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         this.registerReceiver(batteryTemperatureBroadcastReceiver, intentfilter);
@@ -230,5 +250,6 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(MainActivity.this, SensingService.class);
         stopService(intent);
     }
+
 }
 

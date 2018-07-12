@@ -61,7 +61,7 @@ public class Functions {
     public static boolean isTurboCharging(Context context) {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
             double averageCurrent = getBatteryAverageCurrent(context);
-            makeToast(context,"AverageCurrent: "+averageCurrent);
+//            makeToast(context,"AverageCurrent: "+averageCurrent,Toast.LENGTH_LONG);
             if (averageCurrent > 1500000) return true;
             else return false;
         } else {
@@ -72,7 +72,7 @@ public class Functions {
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public static double getBatteryAverageCurrent(Context context) {
-        return getBatteryManager(context.getApplicationContext()).getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_AVERAGE);
+        return getBatteryManager(context.getApplicationContext()).getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
     }
 
     public static double getBatteryVoltage(Context context) {
@@ -235,6 +235,9 @@ public class Functions {
 
     private static void makeToast(Context context, String str) {
         Toast.makeText(context, str, Toast.LENGTH_SHORT).show();
+    }
+    private static void makeToast(Context context, String str,int length) {
+        Toast.makeText(context, str, length).show();
     }
 
 }

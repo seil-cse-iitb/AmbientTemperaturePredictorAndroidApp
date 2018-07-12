@@ -56,10 +56,10 @@ public class SensingService extends Service {
             public void connectComplete(boolean reconnect, String serverURI) {
                 if (reconnect) {
                     makeToast("Reconnected to : " + serverURI);
-                    logInfo(SensingService.this,"[MQTT Reconnected]");
+                    logInfo(SensingService.this, "[MQTT Reconnected]");
                 } else {
                     makeToast("MQTT Connected!");
-                    logInfo(SensingService.this,"[MQTT Connected]");
+                    logInfo(SensingService.this, "[MQTT Connected]");
                 }
             }
 
@@ -73,12 +73,13 @@ public class SensingService extends Service {
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 makeToast("Incoming message: " + new String(message.getPayload()));
-                logInfo(SensingService.this,"[Message Arrived]"+new String(message.getPayload()));
+                logInfo(SensingService.this, "[Message Arrived]" + new String(message.getPayload()));
             }
 
             @Override
             public void deliveryComplete(IMqttDeliveryToken token) {
-//                makeToast("Message delivered! ");
+                if (getStringFromSP(SensingService.this, "delivery_status").equalsIgnoreCase("true"))
+                    makeToast("Message delivered! ");
             }
         });
         MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
