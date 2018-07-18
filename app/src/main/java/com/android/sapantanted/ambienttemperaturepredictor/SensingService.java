@@ -49,6 +49,7 @@ public class SensingService extends Service {
         macAdd = getMacAddr(getApplicationContext());
 
         clientId = clientId + System.currentTimeMillis();
+        
         mqttAndroidClient = new MqttAndroidClient(this, SERVER_URI, clientId);
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
 

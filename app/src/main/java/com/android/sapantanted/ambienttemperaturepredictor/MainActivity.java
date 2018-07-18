@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -224,6 +225,9 @@ public class MainActivity extends AppCompatActivity {
     public void startService(View view) {
         Intent intent = new Intent(MainActivity.this, SensingService.class);
         startService(intent);
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//            startForegroundService(intent);
+//        }
     }
 
     public void stopService(View view) {
