@@ -23,15 +23,16 @@
 
     <TextView
         android:id="@+id/tvMacId"
-        android:layout_margin="10dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_margin="10dp"
         android:text="MAC ID: " />
+
     <TextView
         android:id="@+id/tvRamUsage"
-        android:layout_margin="10dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_margin="10dp"
         android:text="Ram Usage: " />
 
     <LinearLayout
@@ -55,11 +56,17 @@
             android:onClick="setTemperatureSensorId"
             android:text="Set Temperature Sensor Id" />
     </LinearLayout>
+    <CheckBox
+        android:id="@+id/cbDeliveryStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Delivery Status" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
+
 
         <Button
             android:id="@+id/btnStartService"
@@ -81,11 +88,12 @@
             android:onClick="stopService"
             android:text="Stop Service" />
     </LinearLayout>
+
     <TextView
         android:id="@+id/tvMQTTMessage"
-        android:layout_margin="10dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_margin="10dp"
         android:text="MQTT Message" />
 
 </LinearLayout>
