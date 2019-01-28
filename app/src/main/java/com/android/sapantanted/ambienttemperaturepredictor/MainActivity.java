@@ -21,6 +21,11 @@ import android.widget.Toast;
 import com.android.sapantanted.ambienttemperaturepredictor.helper.Constants;
 import com.android.sapantanted.ambienttemperaturepredictor.helper.Functions;
 import com.android.sapantanted.ambienttemperaturepredictor.model.TemperatureReading;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
@@ -255,5 +260,36 @@ public class MainActivity extends AppCompatActivity {
         stopService(intent);
     }
 
+    public void predictTemperature(View view) {
+        final double batteryTemperature = getBatteryTemperature(MainActivity.this);
+        double ramUsagePercentage = getRamUsagePercentage(MainActivity.this);
+        int batteryPercentage = getBatteryPercentage(MainActivity.this);
+        double batteryVoltage = getBatteryVoltage(MainActivity.this);
+        boolean isCharging = isCharging(MainActivity.this);
+        makeToast(isCharging+"");
+        String macAddr = getMacAddr(MainActivity.this);
+        String url="http://10.129.149.32:5000/atmos/prediction";
+        url+="/"+batteryTemperature;
+        url+="/"+ramUsagePercentage;
+        url+="/"+batteryPercentage;
+        url+="/"+batteryVoltage;
+        url+="/"+(isCharging?1:0);
+        url+="/"+macAddr;
+        RequestQueue requestQueue = Volley.newRequestQueue(MainActivity.this);
+        StringRequest sr = new StringRequest(url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                String predictedTemperature =response;
+                Toast.makeText(MainActivity.this,"Battery Temperature: "+batteryTemperature+"\nPredicted Temperature: "+predictedTemperature,Toast.LENGTH_LONG).show();
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                makeToast("Error!!"+error.getMessage());
+            }
+        });
+        requestQueue.add(sr);
+        requestQueue.start();
+    }
 }
 
