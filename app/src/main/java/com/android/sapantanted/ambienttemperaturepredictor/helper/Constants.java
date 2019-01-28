@@ -33,6 +33,6 @@ public class Constants {
     public static final String SUBSCRIPTION_TOPIC = "nodemcu/kresit/dht/ambi";
     public static final String PUBLISH_TOPIC = "data/seil/sm_ph_temp/1122";
     public static final String SERVER_URI = "tcp://mqtt.seil.cse.iitb.ac.in:1883";
-    public static final int MQTT_QOS = 1;
+    public static final int MQTT_QOS = 0;
 
 }

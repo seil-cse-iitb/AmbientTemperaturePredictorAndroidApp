@@ -26,7 +26,7 @@ import static com.android.sapantanted.ambienttemperaturepredictor.helper.Constan
 public class SensingService extends Service {
     private MqttAndroidClient mqttAndroidClient;
     private String macAdd;
-    private String clientId = "AmbientTemperaturePredictor";
+    private String clientId = "AmbientTemperaturePredictorService";
     private PowerManager.WakeLock wl;
 
     public SensingService() {
@@ -49,7 +49,7 @@ public class SensingService extends Service {
         macAdd = getMacAddr(getApplicationContext());
 
         clientId = clientId + System.currentTimeMillis();
-        
+
         mqttAndroidClient = new MqttAndroidClient(this, SERVER_URI, clientId);
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
 

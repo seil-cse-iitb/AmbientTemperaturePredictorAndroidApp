@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvAmbientTemperature, tvActualTemperature, tvMacId, tvRamUsage, tvMQTTMessage;
     private EditText etTemperatureSensorID;
     private MqttAndroidClient mqttAndroidClient;
-    private String clientId = "AmbientTemperaturePredictor";
+    private String clientId = "AmbientTemperaturePredictorActivity";
     private Handler mHandler;
     private CheckBox cbDeliveryStatus;
 
@@ -96,11 +96,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
                 if (reconnect) {
-                    makeToast("Reconnected to : " + serverURI);
+                    makeToast("Activity-MQTT Reconnected to : " + serverURI);
 //                    subscribeToTopic();
                 } else {
 //                    makeToast("Connected to: " + serverURI);
-                    makeToast("MQTT Connected!");
+                    makeToast("Activity-MQTT Connected!");
                 }
             }
 
